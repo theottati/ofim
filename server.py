@@ -1,6 +1,6 @@
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
-import sqlite3, json, secrets, hashlib, hmac, os, re, mimetypes
+import sqlite3, json, secrets, hashlib, hmac, os, re, mimetypes, urllib.parse
 
 ROOT=Path(__file__).resolve().parent
 DB=Path(os.environ.get('OFIM_DB_PATH',ROOT/'ofim.sqlite3'))
@@ -32,8 +32,16 @@ class App(SimpleHTTPRequestHandler):
   token=(self.headers.get('Cookie','').split('ofim_session=',1)[-1].split(';',1)[0] if 'ofim_session=' in self.headers.get('Cookie','') else '')
   r=c.execute('SELECT users.* FROM sessions JOIN users ON users.id=sessions.user_id WHERE sessions.token=? AND sessions.expires>?',(token,__import__('time').time())).fetchone(); return row(r),token
  def do_GET(self):
+  request_path=urllib.parse.urlsplit(self.path).path
+  if request_path.startswith('/art/'):
+   art_root=(ROOT/'art').resolve()
+   target=(ROOT/urllib.parse.unquote(request_path.lstrip('/'))).resolve()
+   try: target.relative_to(art_root)
+   except ValueError: return self.sendj(404,{'error':'Não encontrado.'})
+   if not target.is_file(): return self.sendj(404,{'error':'Não encontrado.'})
+   self.path='/'+target.relative_to(ROOT).as_posix(); return super().do_GET()
   if not self.path.startswith('/api/'):
-   if self.path.split('?')[0] not in ('/','/index.html'): return self.sendj(404,{'error':'Não encontrado.'})
+   if request_path not in ('/','/index.html'): return self.sendj(404,{'error':'Não encontrado.'})
    self.path='/index.html'; return super().do_GET()
   c=db(); user,token=self.auth(c); p=self.path.split('?')[0].split('/')
   if p[2]=='me': return self.sendj(200,{'user':{'id':user['id'],'name':user['name'],'email':user['email']} if user else None})
