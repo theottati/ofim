@@ -14,7 +14,10 @@ def db():
  CREATE TABLE IF NOT EXISTS members(campaign TEXT,user_id TEXT,role TEXT,PRIMARY KEY(campaign,user_id));
  CREATE TABLE IF NOT EXISTS bans(campaign TEXT,user_id TEXT,PRIMARY KEY(campaign,user_id));
  CREATE TABLE IF NOT EXISTS campaign_sheets(campaign TEXT,sheet TEXT,PRIMARY KEY(campaign,sheet));
- CREATE TABLE IF NOT EXISTS homebrew(id TEXT PRIMARY KEY,owner TEXT,campaign TEXT,body TEXT);'''); return c
+ CREATE TABLE IF NOT EXISTS homebrew(id TEXT PRIMARY KEY,owner TEXT,campaign TEXT,body TEXT);''')
+ if 'cover' not in [x['name'] for x in c.execute('PRAGMA table_info(campaigns)')]:
+  c.execute("ALTER TABLE campaigns ADD COLUMN cover TEXT NOT NULL DEFAULT ''")
+ return c
 
 def row(r): return dict(r) if r else None
 class App(SimpleHTTPRequestHandler):
@@ -54,7 +57,7 @@ class App(SimpleHTTPRequestHandler):
    sheets=[]
    for x in c.execute('SELECT sheets.body,sheets.owner FROM campaign_sheets JOIN sheets ON sheets.id=campaign_sheets.sheet WHERE campaign=?',(cid,)):
     item=json.loads(x['body']); item['ownerId']=x['owner']; sheets.append(item)
-   return self.sendj(200,{'campaign':{'id':cid,'name':camp['name'],'description':camp['description'],'role':mem['role'],'invite':camp['token'] if camp['owner']==user['id'] else None},'members':members,'sheets':sheets})
+   return self.sendj(200,{'campaign':{'id':cid,'name':camp['name'],'description':camp['description'],'cover':camp['cover'] or '','role':mem['role'],'invite':camp['token'] if camp['owner']==user['id'] else None},'members':members,'sheets':sheets})
   return self.sendj(404,{'error':'Não encontrado.'})
  def do_POST(self):
   if not self.path.startswith('/api/'):return self.sendj(404,{})
@@ -81,7 +84,7 @@ class App(SimpleHTTPRequestHandler):
   if p[2]=='campaigns':
    cid=secrets.token_urlsafe(12); tok=secrets.token_urlsafe(24); name=str(d.get('name','')).strip()
    if not name:return self.sendj(400,{'error':'Informe o nome da campanha.'})
-   c.execute('INSERT INTO campaigns VALUES(?,?,?,?,?)',(cid,user['id'],name,str(d.get('description','')),tok));c.execute('INSERT INTO members VALUES(?,?,?)',(cid,user['id'],'gm'));c.commit();return self.sendj(200,{'id':cid,'invite':tok})
+   c.execute('INSERT INTO campaigns(id,owner,name,description,token,cover) VALUES(?,?,?,?,?,?)',(cid,user['id'],name,str(d.get('description','')),tok,str(d.get('cover',''))));c.execute('INSERT INTO members VALUES(?,?,?)',(cid,user['id'],'gm'));c.commit();return self.sendj(200,{'id':cid,'invite':tok})
   if p[2]=='join':
    tok=str(d.get('token','')); camp=c.execute('SELECT * FROM campaigns WHERE token=?',(tok,)).fetchone()
    if not camp:return self.sendj(404,{'error':'Link de convite inválido.'})
@@ -99,7 +102,7 @@ class App(SimpleHTTPRequestHandler):
     if not owner or (mem['role']!='gm' and owner['owner']!=user['id']):return self.sendj(403,{'error':'Sem permissão para remover esta ficha.'})
     c.execute('DELETE FROM campaign_sheets WHERE campaign=? AND sheet=?',(cid,sid));c.commit();return self.sendj(200,{'ok':True})
    if action=='update' and mem['role']=='gm':
-    c.execute('UPDATE campaigns SET name=?,description=? WHERE id=?',(str(d.get('name','')).strip(),str(d.get('description','')),cid));c.commit();return self.sendj(200,{'ok':True})
+    c.execute('UPDATE campaigns SET name=?,description=?,cover=? WHERE id=?',(str(d.get('name','')).strip(),str(d.get('description','')),str(d.get('cover','')),cid));c.commit();return self.sendj(200,{'ok':True})
    if action=='revoke-link' and mem['role']=='gm':
     tok=secrets.token_urlsafe(24);c.execute('UPDATE campaigns SET token=? WHERE id=?',(tok,cid));c.commit();return self.sendj(200,{'invite':tok})
    if action=='kick' and mem['role']=='gm':
