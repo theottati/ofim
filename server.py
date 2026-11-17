@@ -27,7 +27,12 @@ class App(SimpleHTTPRequestHandler):
   for k,v in (headers or {}).items(): self.send_header(k,v)
   self.end_headers(); self.wfile.write(b)
  def body(self):
-  n=min(int(self.headers.get('Content-Length','0')),2_000_000); return json.loads(self.rfile.read(n) or b'{}')
+  n=int(self.headers.get('Content-Length','0'))
+  if n>12_000_000:
+   self.sendj(413,{'error':'O envio excedeu o limite de 12 MB.'}); return None
+  try: return json.loads(self.rfile.read(n) or b'{}')
+  except (json.JSONDecodeError,UnicodeDecodeError):
+   self.sendj(400,{'error':'Os dados enviados não formam um JSON válido.'}); return None
  def auth(self,c):
   token=(self.headers.get('Cookie','').split('ofim_session=',1)[-1].split(';',1)[0] if 'ofim_session=' in self.headers.get('Cookie','') else '')
   r=c.execute('SELECT users.* FROM sessions JOIN users ON users.id=sessions.user_id WHERE sessions.token=? AND sessions.expires>?',(token,__import__('time').time())).fetchone(); return row(r),token
@@ -70,6 +75,7 @@ class App(SimpleHTTPRequestHandler):
  def do_POST(self):
   if not self.path.startswith('/api/'):return self.sendj(404,{})
   c=db(); p=self.path.split('?')[0].split('/'); d=self.body()
+  if d is None:return
   if p[2]=='register':
    name=str(d.get('name','')).strip(); email=str(d.get('email','')).strip().lower(); pw=str(d.get('password',''))
    if not name or '@' not in email or len(pw)<8:return self.sendj(400,{'error':'Informe nome, e-mail e senha com pelo menos 8 caracteres.'})
