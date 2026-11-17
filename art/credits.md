@@ -82,6 +82,9 @@ As 69 imagens abaixo foram fornecidas pela pessoa usuária; a numeração liga c
 - `arvore-real.jpg` — Vanja Terzic; CC0 1.0. [Fonte/licença](https://commons.wikimedia.org/wiki/File:Wild_tree_in_nature.jpg).
 - `manuscrito-aberto.jpg` — Godfried Croenen; CC0 1.0. [Fonte/licença](https://commons.wikimedia.org/wiki/File:Manuscript_without_cover.jpg).
 - `caderno-investigador.jpg` — Richard Hill’s Commonplace Book; domínio público/PDM. [Fonte/licença](https://commons.wikimedia.org/wiki/File:Richard_Hill%27s_Commonplace_Book.jpg).
+- `pedra-runa-kylver.jpg` — fotografia de uma pedra rúnica de Kylver, anterior a 1934; autor desconhecido, domínio público/PDM. [Fonte/licença](https://commons.wikimedia.org/wiki/File:Kylverstenen_2.jpg).
+- `circulo-magico-runico.png` — GG Cannon, círculo mágico com runas; CC BY-SA 4.0. [Fonte/licença](https://commons.wikimedia.org/wiki/File:Magic_Circle.png).
+- `sala-estudos-bostock.jpg` — Bluedog423, sala de estudos da biblioteca Bostock; domínio público. [Fonte/licença](https://commons.wikimedia.org/wiki/File:BostockStudy.jpg).
 
 ## Arte criada para o projeto
 
